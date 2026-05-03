@@ -1,4 +1,6 @@
-import { apiDelete, apiGet, apiPost, apiPut } from './client'
+import { apiDelete, apiGet } from './client'
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000/api'
 
 export type ProductDto = {
   id: string
@@ -24,7 +26,8 @@ type ProductInput = {
   packSize: string
   description: string
   price: number
-  imageUrl: string
+  imageUrl?: string
+  imageFile?: File | null
   isActive?: boolean
 }
 
@@ -33,13 +36,42 @@ export function getProducts() {
 }
 
 export function createProduct(payload: ProductInput) {
-  return apiPost<ProductDto, ProductInput>('/products', payload)
+  return uploadProduct('/products', 'POST', payload)
 }
 
 export function editProduct(id: string, payload: ProductInput) {
-  return apiPut<ProductDto, ProductInput>(`/products/${id}`, payload)
+  return uploadProduct(`/products/${id}`, 'PUT', payload)
 }
 
 export function removeProduct(id: string) {
   return apiDelete(`/products/${id}`)
+}
+
+async function uploadProduct(path: string, method: 'POST' | 'PUT', payload: ProductInput) {
+  const formData = new FormData()
+  formData.append('name', payload.name)
+  formData.append('categoryId', payload.categoryId)
+  formData.append('brand', payload.brand ?? 'Mankind')
+  formData.append('group', payload.group)
+  formData.append('manufacturer', payload.manufacturer)
+  formData.append('packSize', payload.packSize)
+  formData.append('description', payload.description)
+  formData.append('price', String(payload.price))
+  formData.append('isActive', String(payload.isActive ?? true))
+
+  if (payload.imageFile) {
+    formData.append('image', payload.imageFile)
+  } else if (payload.imageUrl) {
+    formData.append('imageUrl', payload.imageUrl)
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    body: formData,
+  })
+  const json = (await response.json()) as { message?: string; data?: ProductDto }
+  if (!response.ok || !json.data) {
+    throw new Error(json.message ?? 'Request failed')
+  }
+  return json.data
 }

@@ -1,19 +1,31 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { sendAdminPasswordResetOtp } from '../../api/admin-auth.api'
 import { useAdminAuth } from '../../state/AdminAuthContext'
 
 export function ForgotPasswordPage() {
+  const navigate = useNavigate()
   const { isAuthenticated } = useAdminAuth()
   const [email, setEmail] = useState('')
-  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />
   }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
-    setNotice(`Password reset link sent to ${email}`)
+    setError('')
+    setIsSubmitting(true)
+    try {
+      await sendAdminPasswordResetOtp({ email })
+      navigate(`/auth/reset-password?email=${encodeURIComponent(email)}`)
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Failed to send OTP')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -30,11 +42,14 @@ export function ForgotPasswordPage() {
             placeholder="admin@mankind.com"
             className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-500"
           />
-          <button className="w-full rounded-full bg-emerald-700 py-2.5 text-sm font-semibold text-white">
-            Send reset link
+          <button
+            disabled={isSubmitting}
+            className="w-full rounded-full bg-emerald-700 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSubmitting ? 'Sending OTP...' : 'Send OTP'}
           </button>
         </form>
-        {notice && <p className="mt-3 text-sm font-medium text-emerald-700">{notice}</p>}
+        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
         <p className="mt-4 text-sm">
           <Link to="/auth/sign-in" className="font-semibold text-emerald-700 hover:underline">
             Back to sign in

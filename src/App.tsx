@@ -5,6 +5,7 @@ import { AdminsPage } from './features/admins/AdminsPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { DistributorsPage } from './features/distributors/DistributorsPage'
 import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from './features/auth/ResetPasswordPage'
 import { OrdersPage } from './features/orders/OrdersPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { SignInPage } from './features/auth/SignInPage'
@@ -15,6 +16,7 @@ function App() {
     <Routes>
       <Route path="/auth/sign-in" element={<SignInPage />} />
       <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
 
       <Route
         path="/"

@@ -258,7 +258,8 @@ export function ProductsPage() {
 type ProductInput = {
   name: string
   categoryId: string
-  imageUrl: string
+  imageUrl?: string
+  imageFile?: File | null
   price: number
   status: 'active' | 'draft'
 }
@@ -280,6 +281,7 @@ function ProductModal({
 }) {
   const [form, setForm] = useState<ProductInput>(initialValues)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-3">
@@ -295,6 +297,11 @@ function ProductModal({
         <form
           onSubmit={(event) => {
             event.preventDefault()
+            if (!form.imageFile && !form.imageUrl) {
+              setFormError('Please upload a product image.')
+              return
+            }
+            setFormError('')
             setIsSubmitting(true)
             Promise.resolve(onSubmit(form)).finally(() => setIsSubmitting(false))
           }}
@@ -323,11 +330,24 @@ function ProductModal({
               ))}
             </select>
           </label>
-          <Input
-            label="Image URL"
-            value={form.imageUrl}
-            onChange={(value) => setForm((prev) => ({ ...prev, imageUrl: value }))}
-          />
+          <label className="block">
+            <span className="mb-1 block text-sm font-semibold text-slate-700">Product image</span>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) => {
+                const nextFile = event.target.files?.[0] ?? null
+                setForm((prev) => ({
+                  ...prev,
+                  imageFile: nextFile,
+                }))
+              }}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none file:mr-3 file:rounded-full file:border-0 file:bg-emerald-50 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-emerald-700 focus:border-emerald-500"
+            />
+            {form.imageUrl && !form.imageFile && (
+              <p className="mt-1 text-xs text-slate-500">Using existing image. Choose a file to replace it.</p>
+            )}
+          </label>
           <Input
             label="Price (₦)"
             type="number"
@@ -356,6 +376,7 @@ function ProductModal({
           >
             {isSubmitting ? 'Saving...' : submitLabel}
           </button>
+          {formError && <p className="text-sm font-medium text-red-600 md:col-span-2">{formError}</p>}
         </form>
       </div>
     </div>

@@ -27,7 +27,8 @@ export type AdminProduct = {
 type ProductInput = {
   name: string
   categoryId: string
-  imageUrl: string
+  imageUrl?: string
+  imageFile?: File | null
   price: number
   status: 'active' | 'draft'
 }
@@ -85,6 +86,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       description: `${payload.name} product`,
       price: payload.price,
       imageUrl: payload.imageUrl,
+      imageFile: payload.imageFile,
       isActive: payload.status === 'active',
     })
     setProducts((prev) => [mapProduct(created), ...prev])
@@ -101,6 +103,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       description: `${payload.name} product`,
       price: payload.price,
       imageUrl: payload.imageUrl,
+      imageFile: payload.imageFile,
       isActive: payload.status === 'active',
     })
     setProducts((prev) =>
