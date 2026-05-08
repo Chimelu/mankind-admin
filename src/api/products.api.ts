@@ -1,6 +1,4 @@
-import { apiDelete, apiGet } from './client'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://mankind-backend.vercel.app/api'
+import { apiDelete, apiGet, apiUrl } from './client'
 
 export type ProductDto = {
   id: string
@@ -65,7 +63,7 @@ async function uploadProduct(path: string, method: 'POST' | 'PUT', payload: Prod
     formData.append('imageUrl', payload.imageUrl)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(apiUrl(path), {
     method,
     body: formData,
   })
