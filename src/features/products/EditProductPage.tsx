@@ -17,6 +17,7 @@ export function EditProductPage() {
       submitLabel="Save changes"
       initialValues={{
         name: product.name,
+        description: product.description,
         categoryId: product.categoryId,
         imageUrl: product.imageUrl,
         price: product.price,

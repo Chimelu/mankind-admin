@@ -10,6 +10,7 @@ export function AddProductPage() {
       submitLabel="Create product"
       initialValues={{
         name: '',
+        description: '',
         categoryId: '',
         imageUrl: '',
         price: 0,

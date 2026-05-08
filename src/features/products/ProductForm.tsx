@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 type ProductFormInput = {
   name: string
+  description: string
   categoryId: string
   imageUrl: string
   price: number
@@ -47,6 +48,11 @@ export function ProductForm({
       >
         <div className="grid gap-4 md:grid-cols-2">
           <Input label="Product name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} />
+          <Input
+            label="Description"
+            value={form.description}
+            onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
+          />
           <Input
             label="Category ID"
             value={form.categoryId}
