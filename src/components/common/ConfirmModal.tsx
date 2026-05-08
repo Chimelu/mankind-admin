@@ -3,6 +3,7 @@ type ConfirmModalProps = {
   message: string
   confirmLabel?: string
   cancelLabel?: string
+  isLoading?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
@@ -12,6 +13,7 @@ export function ConfirmModal({
   message,
   confirmLabel = 'Delete',
   cancelLabel = 'Cancel',
+  isLoading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -24,15 +26,17 @@ export function ConfirmModal({
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onCancel}
+            disabled={isLoading}
             className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
+            disabled={isLoading}
             className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white"
           >
-            {confirmLabel}
+            {isLoading ? 'Please wait...' : confirmLabel}
           </button>
         </div>
       </div>

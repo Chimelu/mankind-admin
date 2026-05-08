@@ -17,6 +17,7 @@ import {
 export type AdminProduct = {
   id: string
   name: string
+  description: string
   categoryId: string
   categoryName: string
   imageUrl: string
@@ -26,6 +27,7 @@ export type AdminProduct = {
 
 type ProductInput = {
   name: string
+  description: string
   categoryId: string
   imageUrl?: string
   imageFile?: File | null
@@ -48,6 +50,7 @@ function mapProduct(dto: ProductDto): AdminProduct {
   return {
     id: dto.id,
     name: dto.name,
+    description: dto.description,
     categoryId: dto.categoryId,
     categoryName: dto.category?.name ?? 'Unknown',
     imageUrl: dto.imageUrl,
@@ -83,7 +86,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       group: 'Drugs',
       manufacturer: 'Mankind Life Sciences',
       packSize: '1 pack',
-      description: `${payload.name} product`,
+      description: payload.description,
       price: payload.price,
       imageUrl: payload.imageUrl,
       imageFile: payload.imageFile,
@@ -100,7 +103,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       group: 'Drugs',
       manufacturer: 'Mankind Life Sciences',
       packSize: '1 pack',
-      description: `${payload.name} product`,
+      description: payload.description,
       price: payload.price,
       imageUrl: payload.imageUrl,
       imageFile: payload.imageFile,

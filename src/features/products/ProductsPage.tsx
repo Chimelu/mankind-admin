@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'react-toastify'
 import { ConfirmModal } from '../../components/common/ConfirmModal'
 import { useCategories } from '../../state/CategoriesContext'
 import { useProducts } from '../../state/ProductsContext'
@@ -17,6 +18,7 @@ export function ProductsPage() {
     | null
   >(null)
   const [categoryError, setCategoryError] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const stats = [
     { label: 'Total Products', value: String(products.length) },
@@ -166,15 +168,21 @@ export function ProductsPage() {
           onClose={() => setIsAddOpen(false)}
           initialValues={{
             name: '',
+            description: '',
             categoryId: '',
             imageUrl: '',
             price: 0,
             status: 'active',
           }}
           categories={categories}
-          onSubmit={(payload) => {
-            addProduct(payload)
-            setIsAddOpen(false)
+          onSubmit={async (payload) => {
+            try {
+              await addProduct(payload)
+              toast.success('Product created successfully', toastOptions)
+              setIsAddOpen(false)
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Failed to create product', toastOptions)
+            }
           }}
         />
       )}
@@ -186,15 +194,21 @@ export function ProductsPage() {
           onClose={() => setEditingProduct(null)}
           initialValues={{
             name: editingProduct.name,
+            description: editingProduct.description,
             categoryId: editingProduct.categoryId,
             imageUrl: editingProduct.imageUrl,
             price: editingProduct.price,
             status: editingProduct.status,
           }}
           categories={categories}
-          onSubmit={(payload) => {
-            updateProduct(editingProduct.id, payload)
-            setEditingProduct(null)
+          onSubmit={async (payload) => {
+            try {
+              await updateProduct(editingProduct.id, payload)
+              toast.success('Product updated successfully', toastOptions)
+              setEditingProduct(null)
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Failed to update product', toastOptions)
+            }
           }}
         />
       )}
@@ -237,17 +251,29 @@ export function ProductsPage() {
         <ConfirmModal
           title={`Delete ${deleteTarget.type}`}
           message={`Are you sure you want to delete "${deleteTarget.label}"?`}
+          isLoading={isDeleting}
           onCancel={() => setDeleteTarget(null)}
-          onConfirm={() => {
-            if (deleteTarget.type === 'product') {
-              deleteProduct(deleteTarget.id)
-            } else {
-              setCategoryError('')
-              deleteCategory(deleteTarget.id).catch((error) => {
-                setCategoryError(error instanceof Error ? error.message : 'Category action failed')
-              })
+          onConfirm={async () => {
+            setIsDeleting(true)
+            try {
+              if (deleteTarget.type === 'product') {
+                await deleteProduct(deleteTarget.id)
+                toast.success('Product deleted successfully', toastOptions)
+              } else {
+                setCategoryError('')
+                await deleteCategory(deleteTarget.id)
+                toast.success('Category deleted successfully', toastOptions)
+              }
+              setDeleteTarget(null)
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'Delete action failed'
+              if (deleteTarget.type === 'category') {
+                setCategoryError(message)
+              }
+              toast.error(message, toastOptions)
+            } finally {
+              setIsDeleting(false)
             }
-            setDeleteTarget(null)
           }}
         />
       )}
@@ -257,6 +283,7 @@ export function ProductsPage() {
 
 type ProductInput = {
   name: string
+  description: string
   categoryId: string
   imageUrl?: string
   imageFile?: File | null
@@ -308,6 +335,11 @@ function ProductModal({
           className="mt-4 grid gap-4 md:grid-cols-2"
         >
           <Input label="Product name" value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} />
+          <TextArea
+            label="Description"
+            value={form.description}
+            onChange={(value) => setForm((prev) => ({ ...prev, description: value }))}
+          />
           <label className="block">
             <span className="mb-1 block text-sm font-semibold text-slate-700">Category</span>
             <select
@@ -374,7 +406,7 @@ function ProductModal({
             disabled={isSubmitting}
             className="rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
           >
-            {isSubmitting ? 'Saving...' : submitLabel}
+            {isSubmitting ? 'Saving product...' : submitLabel}
           </button>
           {formError && <p className="text-sm font-medium text-red-600 md:col-span-2">{formError}</p>}
         </form>
@@ -453,4 +485,37 @@ function Input({
       />
     </label>
   )
+}
+
+function TextArea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <label className="block md:col-span-2">
+      <span className="mb-1 block text-sm font-semibold text-slate-700">{label}</span>
+      <textarea
+        required
+        rows={4}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-500"
+      />
+    </label>
+  )
+}
+
+const toastOptions = {
+  position: 'top-right' as const,
+  autoClose: 2600,
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  theme: 'colored' as const,
 }
