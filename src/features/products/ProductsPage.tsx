@@ -6,7 +6,19 @@ import { useProducts } from '../../state/ProductsContext'
 import type { AdminProduct } from '../../state/ProductsContext'
 
 export function ProductsPage() {
-  const { products, loading: loadingProducts, addProduct, updateProduct, deleteProduct } = useProducts()
+  const {
+    products,
+    loading: loadingProducts,
+    currentPage,
+    totalPages,
+    totalProducts,
+    pageSize,
+    isServerPaginated,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    setPage,
+  } = useProducts()
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories()
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null)
@@ -20,8 +32,14 @@ export function ProductsPage() {
   const [categoryError, setCategoryError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
+  const safeTotalProducts = isServerPaginated ? totalProducts : products.length
+  const safeTotalPages = isServerPaginated ? totalPages : Math.max(1, Math.ceil(products.length / pageSize))
+  const currentPageProducts = isServerPaginated
+    ? products
+    : products.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   const stats = [
-    { label: 'Total Products', value: String(products.length) },
+    { label: 'Total Products', value: String(isServerPaginated ? totalProducts : products.length) },
     {
       label: 'Active Products',
       value: String(products.filter((item) => item.status === 'active').length),
@@ -120,7 +138,7 @@ export function ProductsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {products.map((product) => (
+            {currentPageProducts.map((product) => (
               <tr key={product.id}>
                 <td className="py-3">
                   <img
@@ -159,6 +177,35 @@ export function ProductsPage() {
             ))}
           </tbody>
         </table>
+        <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-600">
+            Showing page {currentPage} of {safeTotalPages} ({safeTotalProducts} products)
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage <= 1}
+              onClick={() => {
+                if (currentPage > 1) {
+                  void setPage(currentPage - 1)
+                }
+              }}
+              className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              disabled={currentPage >= safeTotalPages}
+              onClick={() => {
+                if (currentPage < safeTotalPages) {
+                  void setPage(currentPage + 1)
+                }
+              }}
+              className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
 
       {isAddOpen && (

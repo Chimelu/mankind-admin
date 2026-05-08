@@ -27,7 +27,7 @@ export function AdminLayout() {
       </header>
 
       <div className="flex min-h-[calc(100vh-0px)]">
-        <aside className="hidden w-64 bg-slate-950 px-4 py-5 text-slate-100 lg:block">
+        <aside className="hidden w-64 bg-slate-950 px-4 py-5 text-slate-100 lg:fixed lg:inset-y-0 lg:left-0 lg:block lg:overflow-y-auto">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300">
             Mankind Admin
           </p>
@@ -72,7 +72,7 @@ export function AdminLayout() {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 px-3 py-4 md:px-6 md:py-6">
+        <main className="min-w-0 flex-1 px-3 py-4 md:px-6 md:py-6 lg:ml-64">
           <Outlet />
         </main>
       </div>

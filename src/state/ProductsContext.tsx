@@ -11,6 +11,7 @@ import {
   editProduct,
   getProducts,
   removeProduct,
+  type ProductsPageResult,
   type ProductDto,
 } from '../api/products.api'
 
@@ -38,9 +39,15 @@ type ProductInput = {
 type ProductsContextValue = {
   products: AdminProduct[]
   loading: boolean
+  currentPage: number
+  totalPages: number
+  totalProducts: number
+  pageSize: number
+  isServerPaginated: boolean
   addProduct: (payload: ProductInput) => Promise<void>
   updateProduct: (id: string, payload: ProductInput) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
+  setPage: (page: number) => Promise<void>
   refetchProducts: () => Promise<void>
 }
 
@@ -62,10 +69,31 @@ function mapProduct(dto: ProductDto): AdminProduct {
 export function ProductsProvider({ children }: PropsWithChildren) {
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [pageSize] = useState(10)
+  const [isServerPaginated, setIsServerPaginated] = useState(false)
+
+  const applyPage = (result: ProductsPageResult) => {
+    setProducts(result.items.map(mapProduct))
+    setCurrentPage(result.page)
+    setTotalProducts(result.total)
+    setTotalPages(result.totalPages)
+    setIsServerPaginated(result.isServerPaginated)
+  }
+
+  const loadPage = async (page: number) => {
+    const data = await getProducts(page, pageSize)
+    applyPage(data)
+  }
 
   const refetchProducts = async () => {
-    const data = await getProducts()
-    setProducts(data.map(mapProduct))
+    await loadPage(currentPage)
+  }
+
+  const setPage = async (page: number) => {
+    await loadPage(page)
   }
 
   useEffect(() => {
@@ -79,7 +107,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
   }, [])
 
   const addProduct = async (payload: ProductInput) => {
-    const created = await createProductApi({
+    await createProductApi({
       name: payload.name,
       categoryId: payload.categoryId,
       brand: 'Mankind',
@@ -92,7 +120,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       imageFile: payload.imageFile,
       isActive: payload.status === 'active',
     })
-    setProducts((prev) => [mapProduct(created), ...prev])
+    await refetchProducts()
   }
 
   const updateProduct = async (id: string, payload: ProductInput) => {
@@ -109,19 +137,30 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       imageFile: payload.imageFile,
       isActive: payload.status === 'active',
     })
-    setProducts((prev) =>
-      prev.map((item) => (item.id === id ? mapProduct(updated) : item)),
-    )
+    setProducts((prev) => prev.map((item) => (item.id === id ? mapProduct(updated) : item)))
   }
 
   const deleteProduct = async (id: string) => {
     await removeProduct(id)
-    setProducts((prev) => prev.filter((item) => item.id !== id))
+    await refetchProducts()
   }
 
   const value = useMemo(
-    () => ({ products, loading, addProduct, updateProduct, deleteProduct, refetchProducts }),
-    [products, loading],
+    () => ({
+      products,
+      loading,
+      currentPage,
+      totalPages,
+      totalProducts,
+      pageSize,
+      isServerPaginated,
+      addProduct,
+      updateProduct,
+      deleteProduct,
+      setPage,
+      refetchProducts,
+    }),
+    [products, loading, currentPage, totalPages, totalProducts, pageSize, isServerPaginated],
   )
 
   return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>
