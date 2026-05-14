@@ -6,6 +6,7 @@ type ProductFormInput = {
   categoryId: string
   imageUrl: string
   price: number
+  quantity: number
   status: 'active' | 'draft'
 }
 
@@ -68,6 +69,17 @@ export function ProductForm({
             type="number"
             value={String(form.price)}
             onChange={(value) => setForm((prev) => ({ ...prev, price: Number(value) }))}
+          />
+          <Input
+            label="Quantity in stock"
+            type="number"
+            value={String(form.quantity)}
+            onChange={(value) =>
+              setForm((prev) => ({
+                ...prev,
+                quantity: Math.max(0, Math.floor(Number(value) || 0)),
+              }))
+            }
           />
           <label className="block">
             <span className="mb-1 block text-sm font-semibold text-slate-700">Status</span>

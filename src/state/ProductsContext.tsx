@@ -23,6 +23,7 @@ export type AdminProduct = {
   categoryName: string
   imageUrl: string
   price: number
+  quantity: number
   status: 'active' | 'draft'
 }
 
@@ -33,12 +34,14 @@ type ProductInput = {
   imageUrl?: string
   imageFile?: File | null
   price: number
+  quantity: number
   status: 'active' | 'draft'
 }
 
 type ProductsContextValue = {
   products: AdminProduct[]
   loading: boolean
+  searchTerm: string
   currentPage: number
   totalPages: number
   totalProducts: number
@@ -48,6 +51,7 @@ type ProductsContextValue = {
   updateProduct: (id: string, payload: ProductInput) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
   setPage: (page: number) => Promise<void>
+  setSearchTerm: (value: string) => Promise<void>
   refetchProducts: () => Promise<void>
 }
 
@@ -62,6 +66,7 @@ function mapProduct(dto: ProductDto): AdminProduct {
     categoryName: dto.category?.name ?? 'Unknown',
     imageUrl: dto.imageUrl,
     price: Number(dto.price),
+    quantity: Number(dto.quantity ?? 0),
     status: dto.isActive ? 'active' : 'draft',
   }
 }
@@ -69,6 +74,7 @@ function mapProduct(dto: ProductDto): AdminProduct {
 export function ProductsProvider({ children }: PropsWithChildren) {
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTermState] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
@@ -83,8 +89,8 @@ export function ProductsProvider({ children }: PropsWithChildren) {
     setIsServerPaginated(result.isServerPaginated)
   }
 
-  const loadPage = async (page: number) => {
-    const data = await getProducts(page, pageSize)
+  const loadPage = async (page: number, search = searchTerm) => {
+    const data = await getProducts(page, pageSize, search)
     applyPage(data)
   }
 
@@ -94,6 +100,11 @@ export function ProductsProvider({ children }: PropsWithChildren) {
 
   const setPage = async (page: number) => {
     await loadPage(page)
+  }
+
+  const setSearchTerm = async (value: string) => {
+    setSearchTermState(value)
+    await loadPage(1, value)
   }
 
   useEffect(() => {
@@ -116,6 +127,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       packSize: '1 pack',
       description: payload.description,
       price: payload.price,
+      quantity: payload.quantity,
       imageUrl: payload.imageUrl,
       imageFile: payload.imageFile,
       isActive: payload.status === 'active',
@@ -133,6 +145,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       packSize: '1 pack',
       description: payload.description,
       price: payload.price,
+      quantity: payload.quantity,
       imageUrl: payload.imageUrl,
       imageFile: payload.imageFile,
       isActive: payload.status === 'active',
@@ -149,6 +162,7 @@ export function ProductsProvider({ children }: PropsWithChildren) {
     () => ({
       products,
       loading,
+      searchTerm,
       currentPage,
       totalPages,
       totalProducts,
@@ -158,9 +172,10 @@ export function ProductsProvider({ children }: PropsWithChildren) {
       updateProduct,
       deleteProduct,
       setPage,
+      setSearchTerm,
       refetchProducts,
     }),
-    [products, loading, currentPage, totalPages, totalProducts, pageSize, isServerPaginated],
+    [products, loading, searchTerm, currentPage, totalPages, totalProducts, pageSize, isServerPaginated],
   )
 
   return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>

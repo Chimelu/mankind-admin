@@ -21,6 +21,7 @@ export function EditProductPage() {
         categoryId: product.categoryId,
         imageUrl: product.imageUrl,
         price: product.price,
+        quantity: product.quantity,
         status: product.status,
       }}
       onSubmit={(payload) => updateProduct(product.id, payload)}

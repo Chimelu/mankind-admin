@@ -10,6 +10,7 @@ import { OrdersPage } from './features/orders/OrdersPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { SignInPage } from './features/auth/SignInPage'
 import { ProductsPage } from './features/products/ProductsPage'
+import { PharmaciesHospitalsPage } from './features/customers/PharmaciesHospitalsPage'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
         <Route path="admins" element={<AdminsPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="distributors" element={<DistributorsPage />} />
+        <Route path="pharmacies-hospitals" element={<PharmaciesHospitalsPage />} />
         <Route path="profile" element={<ProfilePage />} />
       </Route>
 

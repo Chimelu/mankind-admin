@@ -5,6 +5,7 @@ import {
   getStatesByCountry,
 } from '../../api/locations.api'
 import { ConfirmModal } from '../../components/common/ConfirmModal'
+import { DataTable } from '../../components/common/DataTable'
 import { type AdminDistributor, useDistributors } from '../../state/DistributorsContext'
 
 type DistributorInput = Omit<AdminDistributor, 'id'>
@@ -46,7 +47,7 @@ export function DistributorsPage() {
         </button>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {stats.map((item) => (
           <article key={item.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-sm text-slate-500">{item.label}</p>
@@ -55,52 +56,44 @@ export function DistributorsPage() {
         ))}
       </div>
 
-      <div className="mt-5 overflow-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        {loading && <p className="pb-3 text-sm text-slate-500">Loading distributors...</p>}
-        {error && <p className="pb-3 text-sm font-medium text-red-600">{error}</p>}
-        <table className="w-full min-w-[820px] text-left text-sm">
-          <thead className="text-slate-500">
-            <tr>
-              <th className="pb-3 font-medium">Name</th>
-              <th className="pb-3 font-medium">Country</th>
-              <th className="pb-3 font-medium">City / State</th>
-              <th className="pb-3 font-medium">Phone</th>
-              <th className="pb-3 font-medium">Email</th>
-              <th className="pb-3 font-medium">Address</th>
-              <th className="pb-3 font-medium">Actions</th>
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <DataTable
+          minWidthClass="min-w-[820px]"
+          columns={['Name', 'Country', 'City / State', 'Phone', 'Email', 'Address', 'Actions']}
+          isLoading={loading}
+          error={error || undefined}
+          emptyMessage="No distributors yet. Add your first distributor using the button above."
+          dataLength={distributors.length}
+        >
+          {distributors.map((distributor) => (
+            <tr key={distributor.id}>
+              <td className="px-4 py-3 font-semibold text-slate-800">{distributor.name}</td>
+              <td className="px-4 py-3 text-slate-700">{distributor.country}</td>
+              <td className="px-4 py-3 text-slate-700">
+                {distributor.city}, {distributor.state}
+              </td>
+              <td className="px-4 py-3 text-slate-700">{distributor.phone}</td>
+              <td className="px-4 py-3 text-slate-700">{distributor.email}</td>
+              <td className="px-4 py-3 text-slate-700">{distributor.address}</td>
+              <td className="px-4 py-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingDistributor(distributor)}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeletingDistributor(distributor)}
+                    className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {distributors.map((distributor) => (
-              <tr key={distributor.id}>
-                <td className="py-3 font-semibold text-slate-800">{distributor.name}</td>
-                <td className="py-3 text-slate-700">{distributor.country}</td>
-                <td className="py-3 text-slate-700">
-                  {distributor.city}, {distributor.state}
-                </td>
-                <td className="py-3 text-slate-700">{distributor.phone}</td>
-                <td className="py-3 text-slate-700">{distributor.email}</td>
-                <td className="py-3 text-slate-700">{distributor.address}</td>
-                <td className="py-3">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingDistributor(distributor)}
-                      className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setDeletingDistributor(distributor)}
-                      className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </DataTable>
       </div>
 
       {isAddOpen && (

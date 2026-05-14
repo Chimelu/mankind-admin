@@ -14,6 +14,7 @@ export function AddProductPage() {
         categoryId: '',
         imageUrl: '',
         price: 0,
+        quantity: 0,
         status: 'active',
       }}
       onSubmit={addProduct}

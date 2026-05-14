@@ -12,6 +12,7 @@ import {
   updateAdminPassword,
   updateAdminProfile,
 } from '../api/admin-auth.api'
+import { ADMIN_TOKEN_STORAGE_KEY } from '../api/admin-auth-headers'
 
 type AdminUser = {
   id: string
@@ -34,13 +35,12 @@ type AdminAuthContextValue = {
 }
 
 const STORAGE_KEY = 'mankind-admin-user'
-const TOKEN_STORAGE_KEY = 'mankind-admin-token'
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null)
 
 export function AdminAuthProvider({ children }: PropsWithChildren) {
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem(TOKEN_STORAGE_KEY)
+    return localStorage.getItem(ADMIN_TOKEN_STORAGE_KEY)
   })
   const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
@@ -76,9 +76,9 @@ export function AdminAuthProvider({ children }: PropsWithChildren) {
       localStorage.removeItem(STORAGE_KEY)
     }
     if (nextToken) {
-      localStorage.setItem(TOKEN_STORAGE_KEY, nextToken)
+      localStorage.setItem(ADMIN_TOKEN_STORAGE_KEY, nextToken)
     } else {
-      localStorage.removeItem(TOKEN_STORAGE_KEY)
+      localStorage.removeItem(ADMIN_TOKEN_STORAGE_KEY)
     }
   }
 

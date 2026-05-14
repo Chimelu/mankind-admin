@@ -10,6 +10,7 @@ export type ProductDto = {
   packSize: string
   description: string
   price: number | string
+  quantity?: number | string
   imageUrl: string
   isActive: boolean
   category?: { id: string; name: string }
@@ -44,16 +45,20 @@ type ProductInput = {
   packSize: string
   description: string
   price: number
+  quantity: number
   imageUrl?: string
   imageFile?: File | null
   isActive?: boolean
 }
 
-export async function getProducts(page = 1, limit = 10): Promise<ProductsPageResult> {
+export async function getProducts(page = 1, limit = 10, search?: string): Promise<ProductsPageResult> {
   const query = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   })
+  if (search?.trim()) {
+    query.set('search', search.trim())
+  }
   const response = await fetch(apiUrl(`/products?${query.toString()}`))
   const payload = (await response.json()) as ProductsListApiResponse | ProductDto[]
 
@@ -87,6 +92,15 @@ export async function getProducts(page = 1, limit = 10): Promise<ProductsPageRes
   }
 }
 
+export async function getProductSuggestions(search: string, limit = 6): Promise<ProductDto[]> {
+  const query = search.trim()
+  if (!query) {
+    return []
+  }
+  const result = await getProducts(1, limit, query)
+  return result.items
+}
+
 export function createProduct(payload: ProductInput) {
   return uploadProduct('/products', 'POST', payload)
 }
@@ -109,6 +123,7 @@ async function uploadProduct(path: string, method: 'POST' | 'PUT', payload: Prod
   formData.append('packSize', payload.packSize)
   formData.append('description', payload.description)
   formData.append('price', String(payload.price))
+  formData.append('quantity', String(payload.quantity))
   formData.append('isActive', String(payload.isActive ?? true))
 
   if (payload.imageFile) {

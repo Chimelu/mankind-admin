@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ConfirmModal } from '../../components/common/ConfirmModal'
+import { DataTable } from '../../components/common/DataTable'
 import {
   createAdmin,
   editAdmin,
@@ -70,7 +71,7 @@ export function AdminsPage() {
         </button>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
         {stats.map((item) => (
           <article key={item.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-sm text-slate-500">{item.label}</p>
@@ -79,56 +80,50 @@ export function AdminsPage() {
         ))}
       </div>
 
-      <div className="mt-5 overflow-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        {loading && <p className="pb-3 text-sm text-slate-500">Loading admins...</p>}
-        {error && <p className="pb-3 text-sm font-medium text-red-600">{error}</p>}
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="text-slate-500">
-            <tr>
-              <th className="pb-3 font-medium">Name</th>
-              <th className="pb-3 font-medium">Email</th>
-              <th className="pb-3 font-medium">Role</th>
-              <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {admins.map((admin) => (
-              <tr key={admin.id}>
-                <td className="py-3 font-semibold text-slate-800">{admin.fullName}</td>
-                <td className="py-3 text-slate-700">{admin.email}</td>
-                <td className="py-3 text-slate-700">{admin.role}</td>
-                <td className="py-3">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      admin.isActive
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <DataTable
+          minWidthClass="min-w-[760px]"
+          columns={['Name', 'Email', 'Role', 'Status', 'Actions']}
+          isLoading={loading}
+          error={error || undefined}
+          emptyMessage="No admins found."
+          dataLength={admins.length}
+        >
+          {admins.map((admin) => (
+            <tr key={admin.id}>
+              <td className="px-4 py-3 font-semibold text-slate-800">{admin.fullName}</td>
+              <td className="px-4 py-3 text-slate-700">{admin.email}</td>
+              <td className="px-4 py-3 text-slate-700">{admin.role}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    admin.isActive
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {admin.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingAdmin(admin)}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
                   >
-                    {admin.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingAdmin(admin)}
-                      className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setDeletingAdmin(admin)}
-                      className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeletingAdmin(admin)}
+                    className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
       </div>
 
       {isAddOpen && (

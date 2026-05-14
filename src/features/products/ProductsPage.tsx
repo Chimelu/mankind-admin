@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { ConfirmModal } from '../../components/common/ConfirmModal'
+import { getProductSuggestions, type ProductDto } from '../../api/products.api'
+import { DataTable } from '../../components/common/DataTable'
 import { useCategories } from '../../state/CategoriesContext'
 import { useProducts } from '../../state/ProductsContext'
 import type { AdminProduct } from '../../state/ProductsContext'
@@ -9,6 +11,7 @@ export function ProductsPage() {
   const {
     products,
     loading: loadingProducts,
+    searchTerm,
     currentPage,
     totalPages,
     totalProducts,
@@ -18,6 +21,7 @@ export function ProductsPage() {
     updateProduct,
     deleteProduct,
     setPage,
+    setSearchTerm,
   } = useProducts()
   const { categories, loading, addCategory, updateCategory, deleteCategory } = useCategories()
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -31,6 +35,9 @@ export function ProductsPage() {
   >(null)
   const [categoryError, setCategoryError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [searchInput, setSearchInput] = useState(searchTerm)
+  const [suggestions, setSuggestions] = useState<ProductDto[]>([])
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
 
   const safeTotalProducts = isServerPaginated ? totalProducts : products.length
   const safeTotalPages = isServerPaginated ? totalPages : Math.max(1, Math.ceil(products.length / pageSize))
@@ -49,12 +56,31 @@ export function ProductsPage() {
       value: String(products.filter((item) => item.status === 'draft').length),
     },
     {
-      label: 'Inventory Value',
+      label: 'Inventory value (price × qty)',
       value: `₦${products
-        .reduce((sum, item) => sum + item.price, 0)
+        .reduce((sum, item) => sum + item.price * item.quantity, 0)
         .toLocaleString()}`,
     },
   ]
+
+  useEffect(() => {
+    const query = searchInput.trim()
+    if (!query) {
+      setSuggestions([])
+      setIsLoadingSuggestions(false)
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsLoadingSuggestions(true)
+      getProductSuggestions(query)
+        .then((items) => setSuggestions(items))
+        .catch(() => setSuggestions([]))
+        .finally(() => setIsLoadingSuggestions(false))
+    }, 250)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchInput])
 
   return (
     <section>
@@ -73,7 +99,51 @@ export function ProductsPage() {
         </button>
       </div>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <form
+        className="relative mt-4 flex flex-col gap-2 sm:flex-row sm:items-center"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void setSearchTerm(searchInput)
+        }}
+      >
+        <input
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          placeholder="Search products by name"
+          className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-500 sm:max-w-sm"
+        />
+        {searchInput.trim() && (
+          <div className="top-[44px] z-10 w-full rounded-xl border border-slate-200 bg-white shadow-sm sm:absolute sm:max-w-sm">
+            {isLoadingSuggestions && <p className="px-3 py-2 text-xs text-slate-500">Loading suggestions...</p>}
+            {!isLoadingSuggestions && suggestions.length === 0 && (
+              <p className="px-3 py-2 text-xs text-slate-500">No matching products</p>
+            )}
+            {!isLoadingSuggestions &&
+              suggestions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setSearchInput(item.name)
+                    setSuggestions([])
+                    void setSearchTerm(item.name)
+                  }}
+                  className="block w-full border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-700 first:border-t-0 hover:bg-slate-50"
+                >
+                  {item.name}
+                </button>
+              ))}
+          </div>
+        )}
+        <button
+          type="submit"
+          className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700"
+        >
+          Search
+        </button>
+      </form>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {stats.map((item) => (
           <article key={item.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="text-sm text-slate-500">{item.label}</p>
@@ -124,59 +194,53 @@ export function ProductsPage() {
         </div>
       </div>
 
-      <div className="mt-5 overflow-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        {loadingProducts && <p className="pb-3 text-sm text-slate-500">Loading products...</p>}
-        <table className="w-full min-w-[920px] text-left text-sm">
-          <thead className="text-slate-500">
-            <tr>
-              <th className="pb-3 font-medium">Image</th>
-              <th className="pb-3 font-medium">Name</th>
-              <th className="pb-3 font-medium">Category</th>
-              <th className="pb-3 font-medium">Price</th>
-              <th className="pb-3 font-medium">Status</th>
-              <th className="pb-3 font-medium">Actions</th>
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <DataTable
+          minWidthClass="min-w-[980px]"
+          columns={['Image', 'Name', 'Category', 'Price', 'Qty', 'Status', 'Actions']}
+          isLoading={loadingProducts}
+          emptyMessage="No products match the current filters."
+          dataLength={currentPageProducts.length}
+        >
+          {currentPageProducts.map((product) => (
+            <tr key={product.id}>
+              <td className="px-4 py-3">
+                <img
+                  src={product.imageUrl}
+                  alt={product.name}
+                  className="h-12 w-12 rounded-lg border border-slate-200 object-cover"
+                />
+              </td>
+              <td className="px-4 py-3 font-semibold text-slate-800">{product.name}</td>
+              <td className="px-4 py-3 text-slate-700">{product.categoryName}</td>
+              <td className="px-4 py-3 font-semibold text-slate-800">₦{product.price.toLocaleString()}</td>
+              <td className="px-4 py-3 text-slate-700">{product.quantity.toLocaleString()}</td>
+              <td className="px-4 py-3">
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {product.status}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setEditingProduct(product)}
+                    className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() =>
+                      setDeleteTarget({ type: 'product', id: product.id, label: product.name })
+                    }
+                    className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {currentPageProducts.map((product) => (
-              <tr key={product.id}>
-                <td className="py-3">
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="h-12 w-12 rounded-lg border border-slate-200 object-cover"
-                  />
-                </td>
-                <td className="py-3 font-semibold text-slate-800">{product.name}</td>
-                <td className="py-3 text-slate-700">{product.categoryName}</td>
-                <td className="py-3 font-semibold text-slate-800">₦{product.price.toLocaleString()}</td>
-                <td className="py-3">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    {product.status}
-                  </span>
-                </td>
-                <td className="py-3">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingProduct(product)}
-                      className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() =>
-                        setDeleteTarget({ type: 'product', id: product.id, label: product.name })
-                      }
-                      className="rounded-full border border-red-200 px-3 py-1 text-xs font-semibold text-red-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          ))}
+        </DataTable>
         <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-600">
             Showing page {currentPage} of {safeTotalPages} ({safeTotalProducts} products)
@@ -219,6 +283,7 @@ export function ProductsPage() {
             categoryId: '',
             imageUrl: '',
             price: 0,
+            quantity: 0,
             status: 'active',
           }}
           categories={categories}
@@ -245,6 +310,7 @@ export function ProductsPage() {
             categoryId: editingProduct.categoryId,
             imageUrl: editingProduct.imageUrl,
             price: editingProduct.price,
+            quantity: editingProduct.quantity,
             status: editingProduct.status,
           }}
           categories={categories}
@@ -335,6 +401,7 @@ type ProductInput = {
   imageUrl?: string
   imageFile?: File | null
   price: number
+  quantity: number
   status: 'active' | 'draft'
 }
 
@@ -433,6 +500,16 @@ function ProductModal({
             value={String(form.price)}
             onChange={(value) => setForm((prev) => ({ ...prev, price: Number(value) }))}
           />
+          <Input
+            label="Quantity in stock"
+            type="number"
+            min="0"
+            step="1"
+            value={String(form.quantity)}
+            onChange={(value) =>
+              setForm((prev) => ({ ...prev, quantity: Math.max(0, Math.floor(Number(value) || 0)) }))
+            }
+          />
           <label className="block">
             <span className="mb-1 block text-sm font-semibold text-slate-700">Status</span>
             <select
@@ -514,10 +591,14 @@ function Input({
   value,
   onChange,
   type = 'text',
+  min,
+  step,
 }: {
   label: string
   value: string
   type?: string
+  min?: string
+  step?: string
   onChange: (value: string) => void
 }) {
   return (
@@ -527,6 +608,8 @@ function Input({
         type={type}
         required
         value={value}
+        min={min}
+        step={step}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-500"
       />
