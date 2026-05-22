@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { getDashboardStats, type DashboardStats } from '../../api/dashboard.api'
+import { type AdminOrder, getAdminOrders } from '../../api/orders.api'
 import { DataTable } from '../../components/common/DataTable'
+import {
+  formatFulfillmentStatus,
+  formatMoney,
+  fulfillmentStatusClass,
+} from '../orders/order-utils'
 
 const STAT_CARD_COUNT = 6
 
-const recentOrders: Array<{ id: string; customer: string; total: string; status: string }> = []
+function customerLabel(order: AdminOrder) {
+  if (order.customer?.companyName?.trim()) return order.customer.companyName
+  if (order.customer?.fullName?.trim()) return order.customer.fullName
+  return '—'
+}
 
 function StatCardSkeleton() {
   return (
@@ -16,14 +27,18 @@ function StatCardSkeleton() {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate()
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [recentOrders, setRecentOrders] = useState<AdminOrder[]>([])
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [statsError, setStatsError] = useState('')
+  const [ordersError, setOrdersError] = useState('')
 
   useEffect(() => {
     let mounted = true
-    setLoading(true)
-    setError('')
+    setStatsLoading(true)
+    setStatsError('')
     getDashboardStats()
       .then((data) => {
         if (mounted) setStats(data)
@@ -31,11 +46,33 @@ export function DashboardPage() {
       .catch((err: unknown) => {
         if (mounted) {
           setStats(null)
-          setError(err instanceof Error ? err.message : 'Failed to load stats')
+          setStatsError(err instanceof Error ? err.message : 'Failed to load stats')
         }
       })
       .finally(() => {
-        if (mounted) setLoading(false)
+        if (mounted) setStatsLoading(false)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    setOrdersLoading(true)
+    setOrdersError('')
+    getAdminOrders({ page: 1, limit: 5 })
+      .then((result) => {
+        if (mounted) setRecentOrders(result.items)
+      })
+      .catch((err: unknown) => {
+        if (mounted) {
+          setRecentOrders([])
+          setOrdersError(err instanceof Error ? err.message : 'Failed to load recent orders')
+        }
+      })
+      .finally(() => {
+        if (mounted) setOrdersLoading(false)
       })
     return () => {
       mounted = false
@@ -75,14 +112,14 @@ export function DashboardPage() {
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Dashboard</h1>
       </div>
 
-      {error && !loading && (
+      {statsError && !statsLoading && (
         <p className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
+          {statsError}
         </p>
       )}
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
-        {loading
+        {statsLoading
           ? Array.from({ length: STAT_CARD_COUNT }, (_, index) => (
               <StatCardSkeleton key={`stat-skeleton-${index}`} />
             ))
@@ -110,30 +147,51 @@ export function DashboardPage() {
       <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900">Recent Orders</h2>
-          <button
-            type="button"
-            className="rounded-full border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700"
+          <Link
+            to="/orders"
+            className="rounded-full border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-600 hover:text-emerald-700"
           >
             View all
-          </button>
+          </Link>
         </div>
+        {ordersError && !ordersLoading && (
+          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {ordersError}
+          </p>
+        )}
         <div className="mt-4">
           <DataTable
             minWidthClass="min-w-[640px]"
-            columns={['Order ID', 'Customer', 'Total', 'Status']}
-            isLoading={loading}
+            columns={['Order', 'Customer', 'Total', 'Status']}
+            isLoading={ordersLoading}
             skeletonRowCount={5}
             emptyMessage="No recent orders yet."
             dataLength={recentOrders.length}
           >
             {recentOrders.map((order) => (
-              <tr key={order.id}>
-                <td className="px-4 py-3 font-semibold text-slate-800">{order.id}</td>
-                <td className="px-4 py-3 text-slate-700">{order.customer}</td>
-                <td className="px-4 py-3 font-semibold text-slate-800">{order.total}</td>
+              <tr
+                key={order.id}
+                className="cursor-pointer transition hover:bg-slate-50"
+                onClick={() => navigate(`/orders/${order.id}`)}
+              >
+                <td className="px-4 py-3 font-semibold text-slate-800">
+                  <Link
+                    to={`/orders/${order.id}`}
+                    onClick={(event) => event.stopPropagation()}
+                    className="text-emerald-700 hover:underline"
+                  >
+                    {order.orderNumber}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-slate-700">{customerLabel(order)}</td>
+                <td className="px-4 py-3 font-semibold text-slate-800">
+                  {formatMoney(order.totalAmount)}
+                </td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    {order.status}
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${fulfillmentStatusClass(order.fulfillmentStatus)}`}
+                  >
+                    {formatFulfillmentStatus(order.fulfillmentStatus)}
                   </span>
                 </td>
               </tr>

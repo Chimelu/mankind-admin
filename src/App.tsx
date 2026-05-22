@@ -6,6 +6,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage'
 import { DistributorsPage } from './features/distributors/DistributorsPage'
 import { ForgotPasswordPage } from './features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from './features/auth/ResetPasswordPage'
+import { OrderDetailsPage } from './features/orders/OrderDetailsPage'
 import { OrdersPage } from './features/orders/OrdersPage'
 import { ProfilePage } from './features/profile/ProfilePage'
 import { SignInPage } from './features/auth/SignInPage'
@@ -32,6 +33,7 @@ function App() {
         <Route path="products" element={<ProductsPage />} />
         <Route path="admins" element={<AdminsPage />} />
         <Route path="orders" element={<OrdersPage />} />
+        <Route path="orders/:orderId" element={<OrderDetailsPage />} />
         <Route path="distributors" element={<DistributorsPage />} />
         <Route path="pharmacies-hospitals" element={<PharmaciesHospitalsPage />} />
         <Route path="profile" element={<ProfilePage />} />
